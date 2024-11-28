@@ -27,7 +27,7 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
     super.initState();
     _gpsService = GpsLocationService();
     _mockService = MockLocationService();
-    _currentService = _gpsService;
+    _currentService = _mockService;
     _createBloc();
   }
 
