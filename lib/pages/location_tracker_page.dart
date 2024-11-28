@@ -32,15 +32,13 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
   }
 
   void _createBloc() {
-    _bloc?.close(); // Close existing bloc if any
+    _bloc?.close();
     _bloc = LocationBloc(locationService: _currentService);
   }
 
-  void _toggleService() async {
-    // Stop tracking if currently tracking
+  Future<void> _toggleService() async {
     if (_bloc?.state.isTracking ?? false) {
       _bloc?.add(StopTracking());
-      // Wait a bit for the tracking to stop
       await Future.delayed(const Duration(milliseconds: 500));
     }
 
@@ -64,26 +62,25 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Location History Tracker'),
-          actions: [
-            IconButton(
-              icon: Icon(_currentService is GpsLocationService
-                  ? Icons.gps_fixed
-                  : Icons.route),
-              onPressed: _toggleService,
-              tooltip: _currentService is GpsLocationService
-                  ? 'Switch to Mock GPS'
-                  : 'Switch to Real GPS',
-            ),
-          ],
         ),
-        body: const LocationTrackerView(),
+        body: LocationTrackerView(
+          isUsingGps: _currentService is GpsLocationService,
+          onServiceToggle: _toggleService,
+        ),
       ),
     );
   }
 }
 
 class LocationTrackerView extends StatelessWidget {
-  const LocationTrackerView({super.key});
+  final bool isUsingGps;
+  final VoidCallback onServiceToggle;
+
+  const LocationTrackerView({
+    super.key,
+    required this.isUsingGps,
+    required this.onServiceToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,13 +100,26 @@ class LocationTrackerView extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () {
                       context.read<LocationBloc>().add(
                           state.isTracking ? StopTracking() : StartTracking());
                     },
-                    child: Text(
+                    icon: Icon(
+                      state.isTracking ? Icons.stop : Icons.play_arrow,
+                    ),
+                    label: Text(
                         state.isTracking ? 'Stop Tracking' : 'Start Tracking'),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: onServiceToggle,
+                    icon: Icon(
+                      isUsingGps ? Icons.gps_fixed : Icons.route,
+                    ),
+                    label: Text(
+                      isUsingGps ? 'Switch to Mock' : 'Switch to GPS',
+                    ),
                   ),
                 ],
               ),
@@ -117,12 +127,10 @@ class LocationTrackerView extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  // Map section
                   Expanded(
                     flex: 2,
                     child: _buildMap(state.locations),
                   ),
-                  // Location list section
                   Expanded(
                     flex: 1,
                     child: LocationsList(locations: state.locations),
