@@ -129,14 +129,4 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
     _locationSubscription = null;
     return super.close();
   }
-
-  @override
-  LocationState? fromJson(Map<String, dynamic> json) {
-    return LocationState.fromJson(json);
-  }
-
-  @override
-  Map<String, dynamic>? toJson(LocationState state) {
-    return state.toJson();
-  }
 }
