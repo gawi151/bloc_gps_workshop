@@ -1,6 +1,6 @@
 name: bloc_gps_workshop
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -14,6 +14,8 @@ dependencies:
   hydrated_bloc: ^9.1.3
   path_provider: ^2.1.2
   equatable: ^2.0.5
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0 # Required for coordinates
 
 dev_dependencies:
   flutter_test:

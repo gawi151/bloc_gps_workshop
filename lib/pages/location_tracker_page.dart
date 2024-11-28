@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../blocs/location_bloc.dart';
 import '../models/location_model.dart';
 import '../services/gps_location_service.dart';
@@ -37,7 +39,7 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
   void _toggleService() async {
     // Stop tracking if currently tracking
     if (_bloc?.state.isTracking ?? false) {
-      _bloc?.add( StopTracking());
+      _bloc?.add(StopTracking());
       // Wait a bit for the tracking to stop
       await Future.delayed(const Duration(milliseconds: 500));
     }
@@ -85,43 +87,111 @@ class LocationTrackerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocConsumer<LocationBloc, LocationState>(
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!)),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<LocationBloc>().add(state.isTracking
-                            ? StopTracking()
-                            : StartTracking());
-                      },
-                      child: Text(state.isTracking
-                          ? 'Stop Tracking'
-                          : 'Start Tracking'),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: LocationsList(locations: state.locations),
-              ),
-            ],
+    return BlocConsumer<LocationBloc, LocationState>(
+      listener: (context, state) {
+        if (state.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!)),
           );
-        },
+        }
+      },
+      builder: (context, state) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<LocationBloc>().add(
+                          state.isTracking ? StopTracking() : StartTracking());
+                    },
+                    child: Text(
+                        state.isTracking ? 'Stop Tracking' : 'Start Tracking'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  // Map section
+                  Expanded(
+                    flex: 2,
+                    child: _buildMap(state.locations),
+                  ),
+                  // Location list section
+                  Expanded(
+                    flex: 1,
+                    child: LocationsList(locations: state.locations),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMap(List<LocationModel> locations) {
+    if (locations.isEmpty) {
+      return const Center(child: Text('No locations recorded yet'));
+    }
+
+    final currentLocation = locations.last;
+    final points =
+        locations.map((loc) => LatLng(loc.latitude, loc.longitude)).toList();
+
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter:
+            LatLng(currentLocation.latitude, currentLocation.longitude),
+        initialZoom: 15,
       ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.bloc_gps_workshop',
+          maxZoom: 19,
+        ),
+        PolylineLayer(
+          polylines: [
+            Polyline(
+              points: points,
+              color: Colors.blue.withOpacity(0.7),
+              strokeWidth: 3,
+            ),
+          ],
+        ),
+        MarkerLayer(
+          markers: [
+            // Current location marker
+            Marker(
+              point:
+                  LatLng(currentLocation.latitude, currentLocation.longitude),
+              child: const Icon(
+                Icons.location_on,
+                color: Colors.red,
+                size: 40,
+              ),
+            ),
+            // Path markers
+            ...locations.take(locations.length - 1).map(
+                  (loc) => Marker(
+                    point: LatLng(loc.latitude, loc.longitude),
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.blue,
+                      size: 20,
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ],
     );
   }
 }
