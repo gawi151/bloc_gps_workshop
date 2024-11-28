@@ -72,7 +72,7 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
   }
 }
 
-class LocationTrackerView extends StatelessWidget {
+class LocationTrackerView extends StatefulWidget {
   final bool isUsingGps;
   final VoidCallback onServiceToggle;
 
@@ -81,6 +81,35 @@ class LocationTrackerView extends StatelessWidget {
     required this.isUsingGps,
     required this.onServiceToggle,
   });
+
+  @override
+  State<LocationTrackerView> createState() => _LocationTrackerViewState();
+}
+
+class _LocationTrackerViewState extends State<LocationTrackerView> {
+  late MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _moveToCurrentLocation(List<LocationModel> locations) {
+    if (locations.isNotEmpty) {
+      final currentLocation = locations.last;
+      _mapController.move(
+        LatLng(currentLocation.latitude, currentLocation.longitude),
+        _mapController.camera.zoom,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,50 +122,72 @@ class LocationTrackerView extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        return Column(
+        return Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<LocationBloc>().add(
-                          state.isTracking ? StopTracking() : StartTracking());
-                    },
-                    icon: Icon(
-                      state.isTracking ? Icons.stop : Icons.play_arrow,
-                    ),
-                    label: Text(
-                        state.isTracking ? 'Stop Tracking' : 'Start Tracking'),
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          context.read<LocationBloc>().add(state.isTracking
+                              ? StopTracking()
+                              : StartTracking());
+                        },
+                        icon: Icon(
+                          state.isTracking ? Icons.stop : Icons.play_arrow,
+                        ),
+                        label: Text(state.isTracking
+                            ? 'Stop Tracking'
+                            : 'Start Tracking'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: widget.onServiceToggle,
+                        icon: Icon(
+                          widget.isUsingGps ? Icons.gps_fixed : Icons.route,
+                        ),
+                        label: Text(
+                          widget.isUsingGps
+                              ? 'Switch to Mock'
+                              : 'Switch to GPS',
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: onServiceToggle,
-                    icon: Icon(
-                      isUsingGps ? Icons.gps_fixed : Icons.route,
-                    ),
-                    label: Text(
-                      isUsingGps ? 'Switch to Mock' : 'Switch to GPS',
-                    ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Stack(
+                          children: [
+                            _buildMap(state.locations),
+                            if (state.locations.isNotEmpty)
+                              Positioned(
+                                right: 16,
+                                bottom: 16,
+                                child: FloatingActionButton(
+                                  onPressed: () =>
+                                      _moveToCurrentLocation(state.locations),
+                                  child: const Icon(Icons.my_location),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: LocationsList(locations: state.locations),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildMap(state.locations),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: LocationsList(locations: state.locations),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         );
@@ -146,7 +197,32 @@ class LocationTrackerView extends StatelessWidget {
 
   Widget _buildMap(List<LocationModel> locations) {
     if (locations.isEmpty) {
-      return const Center(child: Text('No locations recorded yet'));
+      return FlutterMap(
+        mapController: _mapController,
+        options: const MapOptions(
+          initialCenter: wroclaw,
+          initialZoom: 13,
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.example.bloc_gps_workshop',
+            maxZoom: 19,
+          ),
+          const MarkerLayer(
+            markers: [
+              Marker(
+                point: wroclaw,
+                child: Icon(
+                  Icons.location_city,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
     }
 
     final currentLocation = locations.last;
@@ -154,6 +230,7 @@ class LocationTrackerView extends StatelessWidget {
         locations.map((loc) => LatLng(loc.latitude, loc.longitude)).toList();
 
     return FlutterMap(
+      mapController: _mapController,
       options: MapOptions(
         initialCenter:
             LatLng(currentLocation.latitude, currentLocation.longitude),
@@ -176,7 +253,6 @@ class LocationTrackerView extends StatelessWidget {
         ),
         MarkerLayer(
           markers: [
-            // Current location marker
             Marker(
               point:
                   LatLng(currentLocation.latitude, currentLocation.longitude),
@@ -186,7 +262,6 @@ class LocationTrackerView extends StatelessWidget {
                 size: 40,
               ),
             ),
-            // Path markers
             ...locations.take(locations.length - 1).map(
                   (loc) => Marker(
                     point: LatLng(loc.latitude, loc.longitude),
@@ -253,3 +328,5 @@ class LocationsList extends StatelessWidget {
     );
   }
 }
+
+const LatLng wroclaw = LatLng(51.1079, 17.0385);
