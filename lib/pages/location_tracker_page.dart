@@ -5,9 +5,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../blocs/location_bloc.dart';
 import '../models/location_model.dart';
-import '../services/gps_location_service.dart';
-import '../services/location_service.dart';
-import '../services/mock_location_service.dart';
+import '../services/location/gps_location_service.dart';
+import '../services/location/location_service.dart';
+import '../services/location/mock_location_service.dart';
+import 'settings_page.dart';
 
 class LocationTrackerPage extends StatefulWidget {
   const LocationTrackerPage({super.key});
@@ -62,6 +63,17 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Location History Tracker'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              },
+            ),
+          ],
         ),
         body: LocationTrackerView(
           isUsingGps: _currentService is GpsLocationService,
