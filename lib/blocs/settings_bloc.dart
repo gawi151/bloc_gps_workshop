@@ -1,7 +1,9 @@
-import 'package:bloc_gps_workshop/services/settings_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../color_utils.dart';
+import '../services/settings_service.dart';
 
 abstract class SettingsEvent extends Equatable {
   const SettingsEvent();
@@ -62,19 +64,7 @@ final class SettingsData extends SettingsState {
     required this.markerColorName,
   });
 
-  // A helper to get the actual Color object from color name:
-  Color get markerColor {
-    switch (markerColorName) {
-      case 'Blue':
-        return Colors.blue;
-      case 'Green':
-        return Colors.green;
-      case 'Orange':
-        return Colors.orange;
-      default:
-        return Colors.red; // fallback and default
-    }
-  }
+  Color get markerColor => getColorFromName(markerColorName);
 
   SettingsData copyWith({
     bool? useMockGPS,

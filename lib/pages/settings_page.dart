@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/settings_bloc.dart';
+import '../color_utils.dart';
 
 
 class SettingsPage extends StatelessWidget {
@@ -42,13 +43,6 @@ class SettingsPage extends StatelessWidget {
                 ),
               );
             case SettingsData(useMockGPS: var useMockGPS, markerColorName: var markerColorName):
-              final Map<String, Color> colorOptions = {
-                'Red': Colors.red,
-                'Blue': Colors.blue,
-                'Green': Colors.green,
-                'Orange': Colors.orange,
-              };
-
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [

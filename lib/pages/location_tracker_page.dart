@@ -1,10 +1,11 @@
-import 'package:bloc_gps_workshop/blocs/settings_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../blocs/location_bloc.dart';
+import '../blocs/settings_bloc.dart';
+import '../color_utils.dart';
 import '../models/location_model.dart';
 import '../services/location/gps_location_service.dart';
 import '../services/location/location_service.dart';
@@ -88,26 +89,13 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
                 ),
                 body: LocationTrackerView(
                   isUsingGps: _currentService is GpsLocationService,
-                  markerColor: _getColorFromName(markerColorName),
+                  markerColor: getColorFromName(markerColorName),
                 ),
               ),
             );
         }
       },
     );
-  }
-
-  Color _getColorFromName(String name) {
-    switch (name) {
-      case 'Blue':
-        return Colors.blue;
-      case 'Green':
-        return Colors.green;
-      case 'Orange':
-        return Colors.orange;
-      default:
-        return Colors.red;
-    }
   }
 }
 
