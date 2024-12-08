@@ -1,3 +1,4 @@
+import 'package:bloc_gps_workshop/blocs/settings_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,25 +30,11 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
     _gpsService = GpsLocationService();
     _mockService = MockLocationService();
     _currentService = _mockService;
-    _createBloc();
   }
 
   void _createBloc() {
     _bloc?.close();
     _bloc = LocationBloc(locationService: _currentService);
-  }
-
-  Future<void> _toggleService() async {
-    if (_bloc?.state.isTracking ?? false) {
-      _bloc?.add(StopTracking());
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-
-    setState(() {
-      _currentService =
-          _currentService is GpsLocationService ? _mockService : _gpsService;
-      _createBloc();
-    });
   }
 
   @override
@@ -58,40 +45,80 @@ class _LocationTrackerPageState extends State<LocationTrackerPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _bloc!,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Location History Tracker'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
-              },
-            ),
-          ],
-        ),
-        body: LocationTrackerView(
-          isUsingGps: _currentService is GpsLocationService,
-          onServiceToggle: _toggleService,
-        ),
-      ),
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      builder: (context, settingsState) {
+        switch (settingsState) {
+          case SettingsLoading():
+            return Scaffold(
+              appBar: AppBar(title: const Text("Location History Tracker")),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+
+          case SettingsError(errorMessage: var errorMessage):
+            return Scaffold(
+              appBar: AppBar(title: const Text("Location History Tracker")),
+              body: Center(child: Text("Error: $errorMessage")),
+            );
+
+          case SettingsData(
+              useMockGPS: var useMockGPS,
+              markerColorName: var markerColorName
+            ):
+            final desiredService = useMockGPS ? _mockService : _gpsService;
+            _currentService = desiredService;
+            _createBloc();
+
+            return BlocProvider.value(
+              value: _bloc!,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: const Text('Location History Tracker'),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SettingsPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                body: LocationTrackerView(
+                  isUsingGps: _currentService is GpsLocationService,
+                  markerColor: _getColorFromName(markerColorName),
+                ),
+              ),
+            );
+        }
+      },
     );
+  }
+
+  Color _getColorFromName(String name) {
+    switch (name) {
+      case 'Blue':
+        return Colors.blue;
+      case 'Green':
+        return Colors.green;
+      case 'Orange':
+        return Colors.orange;
+      default:
+        return Colors.red;
+    }
   }
 }
 
 class LocationTrackerView extends StatefulWidget {
   final bool isUsingGps;
-  final VoidCallback onServiceToggle;
+  final Color markerColor;
 
   const LocationTrackerView({
     super.key,
     required this.isUsingGps,
-    required this.onServiceToggle,
+    required this.markerColor,
   });
 
   @override
@@ -156,18 +183,6 @@ class _LocationTrackerViewState extends State<LocationTrackerView> {
                             ? 'Stop Tracking'
                             : 'Start Tracking'),
                       ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: widget.onServiceToggle,
-                        icon: Icon(
-                          widget.isUsingGps ? Icons.gps_fixed : Icons.route,
-                        ),
-                        label: Text(
-                          widget.isUsingGps
-                              ? 'Switch to Mock'
-                              : 'Switch to GPS',
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -178,7 +193,7 @@ class _LocationTrackerViewState extends State<LocationTrackerView> {
                         flex: 2,
                         child: Stack(
                           children: [
-                            _buildMap(state.locations),
+                            _buildMap(state.locations, widget.markerColor),
                             if (state.locations.isNotEmpty)
                               Positioned(
                                 right: 16,
@@ -207,7 +222,7 @@ class _LocationTrackerViewState extends State<LocationTrackerView> {
     );
   }
 
-  Widget _buildMap(List<LocationModel> locations) {
+  Widget _buildMap(List<LocationModel> locations, Color markerColor) {
     if (locations.isEmpty) {
       return FlutterMap(
         mapController: _mapController,
@@ -268,9 +283,9 @@ class _LocationTrackerViewState extends State<LocationTrackerView> {
             Marker(
               point:
                   LatLng(currentLocation.latitude, currentLocation.longitude),
-              child: const Icon(
+              child: Icon(
                 Icons.location_on,
-                color: Colors.red,
+                color: markerColor,
                 size: 40,
               ),
             ),
