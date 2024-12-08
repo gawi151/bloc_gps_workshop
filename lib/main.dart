@@ -1,5 +1,8 @@
+import 'package:bloc_gps_workshop/blocs/settings_bloc.dart';
+import 'package:bloc_gps_workshop/services/settings_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -13,7 +16,16 @@ void main() async {
         ? HydratedStorage.webStorageDirectory
         : await getTemporaryDirectory(),
   );
-  runApp(const MainApp());
+  final settingsService = SettingsService();
+  runApp(
+    BlocProvider(
+      create: (_) => SettingsBloc(settingsService: settingsService)
+        ..add(
+          LoadSettings(),
+        ),
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {

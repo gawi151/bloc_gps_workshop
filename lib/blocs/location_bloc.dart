@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../models/location_model.dart';
-import '../services/location_service.dart';
+import '../services/location/location_service.dart';
 
 // Events
 abstract class LocationEvent extends Equatable {
