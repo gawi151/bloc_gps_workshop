@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import '../models/location_model.dart';
+import '../../models/location_model.dart';
 import 'location_service.dart';
 
 class MockLocationService implements LocationService {

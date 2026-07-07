@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import '../models/location_model.dart';
+import '../../models/location_model.dart';
 import 'location_service.dart';
 
 class GpsLocationService implements LocationService {
